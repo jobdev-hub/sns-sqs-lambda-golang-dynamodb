@@ -14,7 +14,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
-type Record struct {
+type Body struct {
+	MSG string `json:"Message"`
+}
+type Item struct {
 	ID   string `json:"id"`
 	NAME string `json:"name"`
 	AGE  int    `json:"age"`
@@ -48,22 +51,26 @@ func handler(ctx context.Context, sqsEvent events.SQSEvent) (err error) {
 }
 
 func putEvent(message events.SQSMessage) error {
+	var err error
 
-	var record Record
-	err := json.Unmarshal([]byte(message.Body), &record)
+	var body Body
+	err = json.Unmarshal([]byte(message.Body), &body)
 	if err != nil {
 		return err
 	}
 
-	// go get github.com/google/uuid
-	// record.ID = uuid.New().String()
+	var item Item
+	err = json.Unmarshal([]byte(body.MSG), &item)
+	if err != nil {
+		return err
+	}
 
 	input := &dynamodb.PutItemInput{
 		TableName: aws.String(tbl),
 		Item: map[string]*dynamodb.AttributeValue{
-			"id":   {S: aws.String(record.ID)},
-			"name": {S: aws.String(record.NAME)},
-			"age":  {N: aws.String(fmt.Sprintf("%d", record.AGE))},
+			"id":   {S: aws.String(item.ID)},
+			"name": {S: aws.String(item.NAME)},
+			"age":  {N: aws.String(fmt.Sprintf("%d", item.AGE))},
 		},
 	}
 
